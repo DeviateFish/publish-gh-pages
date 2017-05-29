@@ -1,0 +1,34 @@
+#! /bin/bash
+
+set -e
+
+# Publish the contents of /build to the master branch
+
+SOURCE_BRANCH=`git branch | grep '^\*'`
+SOURCE_BRANCH=${SOURCE_BRANCH:2}
+PACKAGE_VERSION=$(node -p -e "require('./package.json').version")
+
+# "build/" is in our gitignore, so it won't be removed when we check out master
+git checkout master
+# add it to a temporary gitignore on master
+cat <<EOF > .gitignore
+build
+node_modules
+npm_debug.log*
+EOF
+# clean out everything but what's in the gitignore
+git rm -rf .
+# copy everything into the root
+cp -r build/ .
+# add everything
+git add .
+# unstage the .gitignore
+git reset HEAD -- .gitignore
+# clean up the temporary gitignore
+rm .gitignore
+# commit with the package version
+git commit -m $PACKAGE_VERSION
+# push the changes to github
+git push
+# check out the previous branch
+git checkout $SOURCE_BRANCH
